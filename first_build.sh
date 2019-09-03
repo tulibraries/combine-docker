@@ -14,7 +14,7 @@ cp ./combine/localsettings.py.docker ./combine/localsettings.py
 cd ../../
 # build images
 docker volume rm combine_python_env hadoop_binaries spark_binaries livy_binaries combine_tmp
-docker-compose build
+docker-compose -p 'combine' build
 
 # format Hadoop namenode
 docker-compose run hadoop-namenode /bin/bash -c "mkdir -p /hdfs/namenode && echo 'Y' && /opt/hadoop/bin/hdfs namenode -format"
