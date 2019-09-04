@@ -1,299 +1,191 @@
-version: '3.2'
+version: '3'
 services:
-
-
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.5.1
+    image: elasticsearch:7.3.1
     environment:
-      - cluster.name=combine-elasticsearch
-      - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
-      - xpack.security.enabled=false
-      - http.max_initial_line_length=5m
+      cluster.name: combine-elasticsearch
+      ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+      discovery.type: single-node
+      http.max_initial_line_length: 5m
+      path.repo: /tmp/es_repo
+      xpack.security.enabled: "false"
     volumes:
       - esdata:/usr/share/elasticsearch/data
-      - type: bind
-        source: ./elasticsearch/elasticsearch.yml
-        target: /usr/share/elasticsearch/config/elasticsearch.yml
-        read_only: false # owner
     ports:
       - 9200:9200
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.2
-
-
-  mongo:
-    build: ./mongo
-    volumes:
-      - mongodata:/data/db
-    ports:
-      - 27018:27017
-    command: "--config /etc/mongod.conf"
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.3
-
+    healthcheck:
+        test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+        interval: 30s
+        timeout: 30s
+        retries: 3
 
   mysql:
-    build: ./mysql
+    image: mysql:5
     environment:
-      MYSQL_ROOT_PASSWORD: combine
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysqldata:/var/lib/mysql
-    # ports:
-    #   - 3306:3306
-    command: "--default-authentication-plugin=mysql_native_password"
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.4
+      - ./mysql:/etc/mysql/conf.d
+    healthcheck:
+        test: ["CMD-SHELL", "mysqladmin -h 'localhost' -u root -p${MYSQL_PASSWORD} ping --silent"]
+        interval: 30s
+        timeout: 30s
+        retries: 3
+    command: ['--default-authentication-plugin=mysql_native_password']
 
+  mongo:
+    image: mongo:4
+    volumes:
+      - mongodata:/data/db
+      - ./mongo/mongod.conf:/etc/mongod.conf
+    ports:
+      - 27018:27017
+    command: ['--config', '/etc/mongod.conf']
 
   redis:
-    image: redis:4.0
-    # ports:
-    #   - 6379:6379
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.5
+    image: redis:5
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-
-  spark-cluster-base:
-    build:
-      context: ./spark_cluster_base
-      dockerfile: Dockerfile
-      args:
-        SPARK_VERSION: "${SPARK_VERSION}"
-        HADOOP_VERSION_SHORT: "${HADOOP_VERSION_SHORT}"
-        ELASTICSEARCH_HADOOP_CONNECTOR_VERSION: "${ELASTICSEARCH_HADOOP_CONNECTOR_VERSION}"
-    command:  /bin/true # exits code 0
-
-
-  hadoop-namenode:
-    build:
-      context: ./hadoop
-      dockerfile: Dockerfile
-      args:
-        HADOOP_VERSION: "${HADOOP_VERSION}"
+  hadoop-namenode-format:
+    image: tulibraries/combine-hadoop:0.0.1
     volumes:
       - ./combinelib:/combinelib
-      - type: volume
-        source: hdfs
-        target: /hdfs
-        read_only: false
-      - type: volume
-        source: hadoop_binaries
-        target: /opt/hadoop
-        read_only: false # owner of dir
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+    command: '/bin/bash -c "mkdir -p /hdfs/namenode && yes Y | /opt/hadoop/bin/hdfs namenode -format"'
+
+  hadoop-namenode:
+    image: tulibraries/combine-hadoop:0.0.1
+    volumes:
+      - ./combinelib:/combinelib
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+    depends_on:
+      - hadoop-namenode-format
     ports:
       - 8020:8020
-    # entrypoint: bash /tmp/entrypoint_namenode.sh
-    command:  /opt/hadoop/bin/hdfs --config /opt/hadoop/etc/hadoop namenode
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.6
-
+    command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'namenode']
 
   hadoop-datanode:
-    build:
-      context: ./hadoop
-      dockerfile: Dockerfile
-      args:
-        HADOOP_VERSION: "${HADOOP_VERSION}"
+    image: tulibraries/combine-hadoop:0.0.1
     volumes:
       - ./combinelib:/combinelib
     ports:
       - 50070:50070
       - 50075:50075
-    command:  /opt/hadoop/bin/hdfs --config /opt/hadoop/etc/hadoop datanode
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.7
+    command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'datanode']
+    depends_on:
+      - hadoop-namenode
 
-
-  combine-django:
-    build:
-      context: ./combine
-      dockerfile: Dockerfile
-      args:
-        LIVY_TAGGED_RELEASE: "${LIVY_TAGGED_RELEASE}"
-        SCALA_VERSION: "${SCALA_VERSION}"
-        COMBINE_BRANCH: "${COMBINE_BRANCH}"
+  combine-django-migration:
+    # image: tulibraries/combine-django:0.0.9
+    build: ./combine_django
+    env_file:
+      - combine_django/dev.env
+    environment:
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
+      - ./combine:/opt/combine
       - ./combinelib:/combinelib
-      - type: volume
-        source: hdfs
-        target: /hdfs
-        read_only: true
-      - type: volume
-        source: hadoop_binaries
-        target: /opt/hadoop
-        read_only: true
-      - type: volume
-        source: spark_binaries
-        target: /opt/spark
-        read_only: true
-      - type: volume
-        source: livy_binaries
-        target: /opt/livy
-        read_only: true
-      - type: bind # Bind Combine app submodule
-        source: ./combine/combine
-        target: /opt/combine
-        read_only: false # owner
-        bind:
-          propagation: shared
-      - type: volume
-        source: combine_home
-        target: /home/combine
-        read_only: false # owner
-      - type: volume
-        source: combine_python_env
-        target: /opt/conda/envs/combine
-        read_only: false # owner
-      - type: volume
-        source: combine_tmp
-        target: /tmp
-        read_only: false
-    ports:
-      - ${COMBINE_DJANGO_HOST_PORT}:8000
-    command:  bash -c "nohup pyjxslt 6767 & > /tmp/pyjxslt.out && python /opt/combine/manage.py runserver 0.0.0.0:8000"
+      - combine_home:/home/combine
+      - combine_python_env:/opt/conda/envs/combine
+      - combine_tmp:/tmp
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+      - livy_binaries:/opt/livy
+      - spark_binaries:/opt/spark
+    command: '/bin/bash -c "/tmp/combine_db.sh"'
     depends_on:
       - mysql
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.10
+      - elasticsearch
 
+  combine-django:
+    # image: tulibraries/combine-django:0.0.9
+    build: ./combine_django
+    env_file:
+      - combine_django/dev.env
+    environment:
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
+    volumes:
+      - ./combine:/opt/combine
+      - ./combinelib:/combinelib
+      - combine_home:/home/combine
+      - combine_python_env:/opt/conda/envs/combine
+      - combine_tmp:/tmp
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+      - livy_binaries:/opt/livy
+      - spark_binaries:/opt/spark
+    ports:
+      - ${COMBINE_DJANGO_HOST_PORT}:8000
+    command: [ "python", "/opt/combine/manage.py", "runserver", "0.0.0.0:8000" ]
+    depends_on:
+      - combine-django-migration
 
   combine-celery:
-    image: combine-docker_combine-django
+    image: tulibraries/combine-django:0.0.9
+    env_file:
+      - combine_django/dev.env
     volumes:
+      - ./combine:/opt/combine
       - ./combinelib:/combinelib
-      - type: volume
-        source: hdfs
-        target: /hdfs
-        read_only: true
-      - type: volume
-        source: hadoop_binaries
-        target: /opt/hadoop
-        read_only: true
-      - type: volume
-        source: spark_binaries
-        target: /opt/spark
-        read_only: true
-      - type: volume
-        source: livy_binaries
-        target: /opt/livy
-        read_only: true
-      - type: bind # Bind Combine app submodule
-        source: ./combine/combine
-        target: /opt/combine
-        read_only: false # owner
-        bind:
-          propagation: shared
-      - type: volume
-        source: combine_home
-        target: /home/combine
-        read_only: false # owner
-      - type: volume
-        source: combine_python_env
-        target: /opt/conda/envs/combine
-        read_only: false # owner
-      - type: volume
-        source: combine_tmp
-        target: /tmp
-        read_only: false
+      - combine_home:/home/combine
+      - combine_python_env:/opt/conda/envs/combine
+      - combine_tmp:/tmp
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+      - livy_binaries:/opt/livy
+      - spark_binaries:/opt/spark
     working_dir: /opt/combine
-    command:  celery -A core worker -l info --concurrency 1
+    command:  ["celery", "-A", "core", "worker", "-l", "info", "--concurrency", "1"]
     depends_on:
       - redis
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.12
 
-
-  livy:
-    build:
-      context: ./livy
-      dockerfile: Dockerfile
-      args:
-        LIVY_TAGGED_RELEASE: "${LIVY_TAGGED_RELEASE}"
-        SCALA_VERSION: "${SCALA_VERSION}"
+  combine-livy:
+    image: tulibraries/combine-livy:0.0.0
+    env_file:
+      - combine_django/dev.env
     volumes:
+      - ./combine:/opt/combine
       - ./combinelib:/combinelib
-      - type: volume
-        source: hdfs
-        target: /hdfs
-        read_only: true
-      - type: volume
-        source: hadoop_binaries
-        target: /opt/hadoop
-        read_only: true
-      - type: volume
-        source: spark_binaries
-        target: /opt/spark
-        read_only: false # owner of /opt/spark when Livy only
-      - type: volume
-        source: livy_binaries
-        target: /opt/livy
-        read_only: false # owner of dir
-      - type: bind # Bind Combine app submodule
-        source: ./combine/combine
-        target: /opt/combine
-        read_only: false # owner
-        bind:
-          propagation: shared
-      - type: volume
-        source: combine_home
-        target: /home/combine
-        read_only: false
-      - type: volume
-        source: combine_python_env
-        target: /opt/conda/envs/combine
-        read_only: true
-      - type: volume
-        source: combine_tmp
-        target: /tmp
-        read_only: false
+      - combine_home:/home/combine
+      - combine_python_env:/opt/conda/envs/combine
+      - combine_tmp:/tmp
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+      - livy_binaries:/opt/livy
+      - spark_binaries:/opt/spark
     ports:
       - 8998:8998
       - 4040:4040
-    command:  bash -c "nohup pyjxslt 6767 & > /tmp/pyjxslt.out && /opt/livy/bin/livy-server"
-    networks:
-      combinenet:
-        ipv4_address: 10.5.0.11
-
+    command: ["bash", "-c", "'/opt/livy/bin/livy-server'"]
 
 volumes:
-
   # non-volatile
+  combine_home:
+    driver: local
   esdata:
+    driver: local
+  hdfs:
     driver: local
   mongodata:
     driver: local
   mysqldata:
     driver: local
-  hdfs:
-    driver: local
-  combine_home:
-    driver: local
-
   # volatile
   combine_python_env:
     driver: local
-  hadoop_binaries:
+  combine_tmp:
     driver: local
-  spark_binaries:
+  hadoop_binaries:
     driver: local
   livy_binaries:
     driver: local
-  combine_tmp:
+  spark_binaries:
     driver: local
-
-
-networks:
-  combinenet:
-    driver: bridge
-    ipam:
-     driver: default
-     config:
-       - subnet: 10.5.0.0/16
