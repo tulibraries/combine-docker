@@ -135,7 +135,6 @@ services:
         COMBINE_BRANCH: "${COMBINE_BRANCH}"
     volumes:
       - ./combinelib:/combinelib
-      - ./combine/combine:/opt/combine
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
@@ -254,29 +253,27 @@ services:
 
 volumes:
   # non-volatile
+  combine_home:
+    driver: local
   esdata:
+    driver: local
+  hdfs:
     driver: local
   mongodata:
     driver: local
   mysqldata:
     driver: local
-  hdfs:
-    driver: local
-  combine_home:
-    driver: local
-
   # volatile
   combine_python_env:
     driver: local
-  hadoop_binaries:
+  combine_tmp:
     driver: local
-  spark_binaries:
+  hadoop_binaries:
     driver: local
   livy_binaries:
     driver: local
-  combine_tmp:
+  spark_binaries:
     driver: local
-
 
 networks:
   combinenet:
