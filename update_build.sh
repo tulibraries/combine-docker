@@ -6,18 +6,9 @@ source $(echo $DEV_ENV).env
 # bring down Combine docker containers, if running
 docker-compose down
 
-# init Combine app submodule and use localsettings docker template
-git submodule init
-git submodule update
-cd combine/combine
-git fetch
-git checkout $COMBINE_BRANCH
-git pull
-cd ../../
-
 # build images
 docker volume rm combine_python_env hadoop_binaries spark_binaries livy_binaries combine_tmp
-docker-compose build
+docker-compose build --env-file=dev.env
 
 # run migrations in Combine Django app
 bin/combine_migrations.sh
