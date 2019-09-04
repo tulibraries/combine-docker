@@ -62,9 +62,6 @@ services:
 
   redis:
     image: redis:5
-    command:
-      - 'sysctl'
-      - 'vm.overcommit_memory=1'
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -73,7 +70,7 @@ services:
     networks:
       combinenet:
         ipv4_address: 10.5.0.5
-  
+
   spark-cluster-base:
     build:
       context: ./spark_cluster_base
@@ -82,101 +79,81 @@ services:
         SPARK_VERSION: "${SPARK_VERSION}"
         HADOOP_VERSION_SHORT: "${HADOOP_VERSION_SHORT}"
         ELASTICSEARCH_HADOOP_CONNECTOR_VERSION: "${ELASTICSEARCH_HADOOP_CONNECTOR_VERSION}"
-    command:  /bin/true # exits code 0
 
-  # combine-django:
-  #   build:
-  #     context: ./combine
-  #     dockerfile: Dockerfile
-  #     args:
-  #       LIVY_TAGGED_RELEASE: "${LIVY_TAGGED_RELEASE}"
-  #       SCALA_VERSION: "${SCALA_VERSION}"
-  #       COMBINE_BRANCH: "${COMBINE_BRANCH}"
-  #   volumes:
-  #     - ./combinelib:/combinelib
-  #     - type: volume
-  #       source: hdfs
-  #       target: /hdfs
-  #       read_only: true
-  #     - type: volume
-  #       source: hadoop_binaries
-  #       target: /opt/hadoop
-  #       read_only: true
-  #     - type: volume
-  #       source: spark_binaries
-  #       target: /opt/spark
-  #       read_only: true
-  #     - type: volume
-  #       source: livy_binaries
-  #       target: /opt/livy
-  #       read_only: true
-  #     - type: bind # Bind Combine app submodule
-  #       source: ./combine/combine
-  #       target: /opt/combine
-  #       read_only: false # owner
-  #       bind:
-  #         propagation: shared
-  #     - type: volume
-  #       source: combine_home
-  #       target: /home/combine
-  #       read_only: false # owner
-  #     - type: volume
-  #       source: combine_python_env
-  #       target: /opt/conda/envs/combine
-  #       read_only: false # owner
-  #     - type: volume
-  #       source: combine_tmp
-  #       target: /tmp
-  #       read_only: false
-  #   ports:
-  #     - ${COMBINE_DJANGO_HOST_PORT}:8000
-  #   command:  bash -c "nohup pyjxslt 6767 & > /tmp/pyjxslt.out && python /opt/combine/manage.py runserver 0.0.0.0:8000"
-  #   depends_on:
-  #     - mysql
-  #   networks:
-  #     combinenet:
-  #       ipv4_address: 10.5.0.10
-  #
-  # hadoop-namenode:
-  #   build:
-  #     context: ./hadoop
-  #     dockerfile: Dockerfile
-  #     args:
-  #       HADOOP_VERSION: "${HADOOP_VERSION}"
-  #   volumes:
-  #     - ./combinelib:/combinelib
-  #     - type: volume
-  #       source: hdfs
-  #       target: /hdfs
-  #       read_only: false
-  #     - type: volume
-  #       source: hadoop_binaries
-  #       target: /opt/hadoop
-  #       read_only: false # owner of dir
-  #   ports:
-  #     - 8020:8020
-  #   # entrypoint: bash /tmp/entrypoint_namenode.sh
-  #   command:  /opt/hadoop/bin/hdfs --config /opt/hadoop/etc/hadoop namenode
-  #   networks:
-  #     combinenet:
-  #       ipv4_address: 10.5.0.6
-  #
-  # hadoop-datanode:
-  #   build:
-  #     context: ./hadoop
-  #     dockerfile: Dockerfile
-  #     args:
-  #       HADOOP_VERSION: "${HADOOP_VERSION}"
-  #   volumes:
-  #     - ./combinelib:/combinelib
-  #   ports:
-  #     - 50070:50070
-  #     - 50075:50075
-  #   command:  /opt/hadoop/bin/hdfs --config /opt/hadoop/etc/hadoop datanode
-  #   networks:
-  #     combinenet:
-  #       ipv4_address: 10.5.0.7
-  #
+  hadoop-namenode:
+    build:
+      context: ./hadoop
+      dockerfile: Dockerfile
+      args:
+        HADOOP_VERSION: "${HADOOP_VERSION}"
+    volumes:
+      - ./combinelib:/combinelib
+      - hdfs:/hdfs
+      - hadoop_binaries:/opt/hadoop
+    ports:
+      - 8020:8020
+    command:
+      - '/opt/hadoop/bin/hdfs'
+      - '--config'
+      - '/opt/hadoop/etc/hadoop'
+      - 'namenode'
+    depends_on:
+      - spark-cluster-base
+    networks:
+      combinenet:
+        ipv4_address: 10.5.0.6
+
+  hadoop-datanode:
+    build:
+      context: ./hadoop
+      dockerfile: Dockerfile
+      args:
+        HADOOP_VERSION: "${HADOOP_VERSION}"
+    volumes:
+      - ./combinelib:/combinelib
+    ports:
+      - 50070:50070
+      - 50075:50075
+    command:
+      - '/opt/hadoop/bin/hdfs'
+      - '--config'
+      - '/opt/hadoop/etc/hadoop'
+      - 'datanode'
+    depends_on:
+      - hadoop-namenode
+    networks:
+      combinenet:
+        ipv4_address: 10.5.0.7
+
+  combine-django:
+    build:
+      context: ./combine
+      dockerfile: Dockerfile
+      args:
+        LIVY_TAGGED_RELEASE: "${LIVY_TAGGED_RELEASE}"
+        SCALA_VERSION: "${SCALA_VERSION}"
+        COMBINE_BRANCH: "${COMBINE_BRANCH}"
+    volumes:
+      - ./combinelib:/combinelib
+      - ./combine/combine:/opt/combine
+      - combine_home:/home/combine
+      - combine_python_env:/opt/conda/envs/combine
+      - combine_tmp:/tmp
+      - hadoop_binaries:/opt/hadoop
+      - hdfs:/hdfs
+      - livy_binaries:/opt/livy
+      - spark_binaries:/opt/spark
+    ports:
+      - ${COMBINE_DJANGO_HOST_PORT}:8000
+    command: bash -c "nohup pyjxslt 6767 & > /tmp/pyjxslt.out && python /opt/combine/manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - mysql
+      - elasticsearch
+    networks:
+      combinenet:
+        ipv4_address: 10.5.0.10
+
+
   # combine-celery:
   #   image: combine-docker_combine-django
   #   volumes:
@@ -222,7 +199,7 @@ services:
   #   networks:
   #     combinenet:
   #       ipv4_address: 10.5.0.12
-  #
+
   # livy:
   #   build:
   #     context: ./livy
