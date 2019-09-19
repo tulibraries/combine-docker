@@ -1,34 +1,54 @@
 version: '3'
 services:
   elasticsearch:
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 3]
+      restart: always
 
   mysql:
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 2]
+      restart: always
 
   mongo:
+    placement:
+      constraints: [node.labels.number == 3]
     restart: always
 
   redis:
     restart: always
 
   hadoop-namenode-format:
+    placement:
+      constraints: [node.labels.number == 1]
     restart: always
 
   hadoop-namenode:
+    placement:
+      constraints: [node.labels.number == 2]
     restart: always
 
   hadoop-datanode:
     restart: always
 
   combine-django-migration:
+    placement:
+      constraints: [node.labels.number == 1]
     restart: always
 
   combine-django:
+    placement:
+      constraints: [node.labels.number == 1]
     restart: always
 
   combine-celery:
+    placement:
+      constraints: [node.labels.number == 1]
     restart: always
 
   combine-livy:
+    placement:
+      constraints: [node.labels.number == 1]
     restart: always

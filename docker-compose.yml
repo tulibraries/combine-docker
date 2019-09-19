@@ -49,7 +49,7 @@ services:
       retries: 3
 
   hadoop-namenode-format:
-    image: tulibraries/combine-hadoop:0.0.1
+    image: tulibraries/combine-hadoop:0.0.2
     volumes:
       - ./combinelib:/combinelib
       - hadoop_binaries:/opt/hadoop
@@ -57,7 +57,7 @@ services:
     command: '/bin/bash -c "mkdir -p /hdfs/namenode && yes Y | /opt/hadoop/bin/hdfs namenode -format"'
 
   hadoop-namenode:
-    image: tulibraries/combine-hadoop:0.0.1
+    image: tulibraries/combine-hadoop:0.0.2
     volumes:
       - ./combinelib:/combinelib
       - hadoop_binaries:/opt/hadoop
@@ -69,7 +69,7 @@ services:
     command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'namenode']
 
   hadoop-datanode:
-    image: tulibraries/combine-hadoop:0.0.1
+    image: tulibraries/combine-hadoop:0.0.2
     volumes:
       - ./combinelib:/combinelib
     ports:
@@ -80,7 +80,7 @@ services:
       - hadoop-namenode
 
   combine-django-migration:
-    image: tulibraries/combine-django:0.0.10
+    image: tulibraries/combine-django:0.0.11
     env_file:
       - combine_django/.env
     environment:
@@ -101,7 +101,7 @@ services:
       - elasticsearch
 
   combine-django:
-    image: tulibraries/combine-django:0.0.10
+    image: tulibraries/combine-django:0.0.11
     env_file:
       - combine_django/.env
     environment:
@@ -123,7 +123,7 @@ services:
       - combine-django-migration
 
   combine-celery:
-    image: tulibraries/combine-django:0.0.10
+    image: tulibraries/combine-django:0.0.11
     env_file:
       - combine_django/.env
     volumes:
@@ -136,12 +136,12 @@ services:
       - livy_binaries:/opt/livy
       - spark_binaries:/opt/spark
     working_dir: /opt/combine
-    command: '/tmp/wait-for-it/wait-for-it.sh -h redis -p 6379 -- /bin/bash -c "sleep 10 && nohup pyjxslt 6767 & > /tmp/pyjxslt.out && celery -A core worker -l info --concurrency 1"'
+    command: '/tmp/wait-for-it/wait-for-it.sh -h redis -p 6379 -- /bin/bash -c "sleep 20 && nohup pyjxslt 6767 & > /tmp/pyjxslt.out && celery -A core worker -l info --concurrency 1"'
     depends_on:
       - redis
 
   combine-livy:
-    image: tulibraries/combine-livy:0.0.1
+    image: tulibraries/combine-livy:0.0.2
     env_file:
       - combine_django/.env
     volumes:
