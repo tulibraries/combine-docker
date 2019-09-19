@@ -1,15 +1,64 @@
-# Combine-Docker
+# TU Libraries Combine on Docker
+
+This repository contains a heavily refactored copy of ["Combine-Docker"](https://github.com/mi-dpla/combine-docker.git), a docker-compose setup for running [Combine](https://github.com/mi-dpla/combine.git), an experimental / alpha-release cultural heritage metadata aggregation system.
+
+## Components
+
+Combine itself is a complicated system. The components:
+- Combine Django app (combine-django): a django web application that serves up the primary GUIs (`/admin` and `/combine`);
+- Combine Livy app (combine-livy): an instance of Livy used to manage Spark (below) and integrate (loosely) with Combine Django;
+- Celery (combine-celery): an asynch job queue  used by the Django app (and possibly Livy);
+- Hadoop setup (combine-hadoop), comprised of one namenode and one datanode;
+- Redis: a message broker for the Celery queue (and possibly used by Livy);
+- MongoDB: a no-SQL document database, where records are stored;
+- MySQL: the Django App database;
+- and Elasticsearch: an index used by the Django app for facets and searching of jobs, records, etc.
+
+Underlying a few of these components is an installation of Spark (using PySpark), as well as the DPLA Ingestion 3 Scala jars for running within Spark.
+
+For this refactor, the following docker-compose services are defined, based off (where feasible) shipped & versioned Docker images:
+
+- `combine-django` (built & shipped to dockerhub by us)
+- `combine-livy` (built & shipped to dockerhub by us)
+- `combine-celery` (built & shipped to dockerhub by us)
+- `hadoop-datanode` (based on the image `combine-hadoop`, built & shipped to dockerhub by us)
+- `hadoop-namenode` (based on the image `combine-hadoop`, built & shipped to dockerhub by us)
+- `redis` (community image)
+- `mongo` (community image)
+- `mysql` (community image)
+- `elasticsearch` (community image).
+
+We also replaced the initialization and migration scripts with 2 additional docker-compose services that execute idempotent forms of the replaced commands:
+- `hadoop-namenode-format`
+- `combine-django-migration`
+
+These services execute a command only, and run whenever docker-compose up or restart is run.
+
+## Makefile Commands Abstraction
+
+As a locally preferred wrapper to running the commands needed below for local development spin-up, testing, and deployment, we use a Makefile with the following scenarios:
+
+- `make build-combine-{enter image}`: build the entered image locally, based on the directory of the referenced image.
+- `make tag={enter image tag} tag-combine-{enter image}`: tag with the given tag & prepend `tulibraries/` to the name of the referenced image.
+- `make tag={enter image tag} ship-combine-{enter image}`: log into DockerHub (expects you've done this at least one locally) & ships the referenced image & tag to tulibraries dockerhub.
+- `make env-file={enter dotenv} up`: cleans out the docker-compose `combine-docker` project directory, pulls the images, builds anything remaining, then runs docker-compose up.
+- `make reload`: starts docker-compose services already running.
+- `make stop`: stops, but does not delete, docker-compose services.
+- `make down`: stops and rmoves _all_ the docker-compose services, volumes, images spun up above.
+
+## Test & Linting
 
 
-## Overview
+## Local Development
 
-This repository provides a "Dockerized" version of [Combine](https://github.com/mi-dpla/combine.git).
 
-### Hoes does it work?
+## Deployment
 
-Major components that support Combine, all installed on a single server when building via the [Combine-Playbook](https://github.com/mi-dpla/combine-playbook.git) ansible route, have been broken out into distinct Docker images and containers.  Using [Docker Compose](https://docs.docker.com/compose/), each of these major components is associated with a Docker Compose **service**.  Some share base images, others are pulled from 3rd party Docker images (like ElasticSearch and Mongo).
 
-Docker Compose provides a way to interact with all the containers that support Combine at once, even providing some improved ability to view logs, restart services, etc.
+
+---------------------------------------------------------------------------------------
+
+## Overview (Original MI-DPLA Readme)
 
 ### Data Integrity
 
@@ -20,36 +69,6 @@ Docker Compose provides a way to interact with all the containers that support C
   * `mysqldata`: MySQL data
   * `hdfs`: Hadoop HDFS data
   * `combine_home`: Home directory for Combine that contains important, non-volatile data
-
-Containers are shutdown with the command `docker-compose down`, which is perfectly safe and encouraged!  However, **do not** include the `-v` or `--volumes` flag to that command, which will remove **all** volumes associated with the services in the `docker-compose.yml` file.
-
-Docker does a relatively good job protecting named volumes, but this simple command would wipe data from Combine.  You can find [more information about the command `docker-compose down` here](https://docs.docker.com/compose/reference/down/).
-
-
-## Installation and First Build
-
-The first step is to clone this repository and move into it:
-```
-git clone https://github.com/mi-dpla/combine-docker.git
-cd combine-docker
-```
-
-Next, run the `first_build.sh` script:
-```
-./first_build.sh
-```
-
-**Note:** This script may take some time, anywhere from 5-20 minutes depending on your hardware.  This script accomplishes a few things:
-
-  * initializes Combine Django app as Git submodule at `./combine/combine`
-  * builds all required docker images
-  * runs one-time database initializations and migrations
-
-
-## Configuration
-
-Once a build is complete, configurations may be performed on Combine's `localsettings.py`.  This file is found at `./combine/combine/combine/localsettings.py`.  This file will be maintained between upgrades.
-
 
 ## Running and Managing
 
@@ -115,18 +134,15 @@ This dockerized version of Combine includes the following services, where each b
 
 | Service Name          | Internal Network IP | Notes                                                      |
 | --------------------- | ------------------- | ---------------------------------------------------------- |
-| **host machine**      | `10.5.0.1`          | not a container, but part of internal network              |
-| `elasticsearch`       | `10.5.0.2`          |                                                            |
-| `mongo`               | `10.5.0.3`          |                                                            |
-| `mysql`               | `10.5.0.4`          |                                                            |
-| `redis`               | `10.5.0.5`          |                                                            |
-| `hadoop-namenode`     | `10.5.0.6`          |                                                            |
-| `hadoop-datanode`     | `10.5.0.7`          |                                                            |
-| `spark-master`        | `10.5.0.8`          | not currently used                                         |
-| `spark-worker`        | `10.5.0.9`          | not currently used                                         |
-| `combine-django`      | `10.5.0.10`         |                                                            |
-| `livy`                | `10.5.0.11`         | location of spark application running in `local[*]` mode   |
-| `combine-celery`      | `10.5.0.12`         |                                                            |
+| `elasticsearch`       | `elasticsearch`     |                                                            |
+| `mongo`               | `mongo`             |                                                            |
+| `mysql`               | `mysql`             |                                                            |
+| `redis`               | `redis`             |                                                            |
+| `hadoop-namenode`     | `hadoop-namenode`   |                                                            |
+| `hadoop-datanode`     | `hadoop-datanode`   |                                                            |
+| `combine-django`      | `combine-django`    |                                                            |
+| `livy`                | `combine-livy`      | location of spark application running in `local[*]` mode   |
+| `combine-celery`      | `combine-celery`    |                                                            |
 
 
 The following tables show Docker volumes and binds that are created to support data sharing between containers, and "long-term" data storage.  The column `Data Storage` indicates which volumes act as data stores for Combine and should not be deleted (unless, of course, a fresh installation is desired).  Conversely, the column `Refreshed on Upgrade` shows which tables are removed during builds.  **Note:** this information is purely for informational purposes only; the build scripts and normal usage of `docker-compose up` and `docker-compose down` will not remove these volumes.
@@ -168,6 +184,3 @@ Please don't hesitate to [submit an issue](https://github.com/MI-DPLA/combine-do
 The Combine Django application, where most developments efforts are targeted, is a [bind mount volume](https://docs.docker.com/storage/bind-mounts/) from the location of this cloned repository on disk at `./combine/combine`.  Though the application is copied to the docker images during build, to support the installation of dependencies, the location `/opt/combine` is overwritten by this bind volume at `docker-compose up` or `run`.  This allows live editing of the local folder `./combine/combine`, which is updating the folder `/opt/combine` in services `combine-django`, `combine-celery`, and `livy`.
 
 The folder `./combine/combine` can, for the most part, be treated like a normal GitHub repository.  For example, one could checkout or create a new branch, and then push and pull from there.
-
-
-

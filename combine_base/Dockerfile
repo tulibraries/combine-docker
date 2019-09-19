@@ -1,5 +1,14 @@
 FROM openjdk:8-jdk-stretch
 
+# Arguments
+ARG SPARK_VERSION
+ARG HADOOP_VERSION_SHORT
+ARG ELASTICSEARCH_HADOOP_CONNECTOR_VERSION
+ENV SPARK_VERSION=$SPARK_VERSION
+ENV HADOOP_VERSION_SHORT=$HADOOP_VERSION_SHORT
+ENV ELASTICSEARCH_HADOOP_CONNECTOR_VERSION=$ELASTICSEARCH_HADOOP_CONNECTOR_VERSION
+
+# Set up locales
 RUN apt-get update \
  && apt-get install -y locales \
  && dpkg-reconfigure -f noninteractive locales \
@@ -9,13 +18,11 @@ RUN apt-get update \
  && locale-gen \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
-
-# Users with other locales should set this in their derivative image
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-# Install OS libraries
+# Install OS libraries + Python & set up
 RUN apt-get update \
  && apt-get install -y curl unzip lsof wget unzip maven \
     python3 python3-setuptools \
@@ -24,19 +31,9 @@ RUN apt-get update \
  && easy_install3 pip py4j \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
-
-# http://blog.stuart.axelbrooke.com/python-3-on-spark-return-of-the-pythonhashseed
 ENV PYTHONHASHSEED 0
 ENV PYTHONIOENCODING UTF-8
 ENV PIP_DISABLE_PIP_VERSION_CHECK 1
-
-# Arguments
-ARG SPARK_VERSION
-ENV SPARK_VERSION=$SPARK_VERSION
-ARG HADOOP_VERSION_SHORT
-ENV HADOOP_VERSION_SHORT=$HADOOP_VERSION_SHORT
-ARG ELASTICSEARCH_HADOOP_CONNECTOR_VERSION
-ENV ELASTICSEARCH_HADOOP_CONNECTOR_VERSION=$ELASTICSEARCH_HADOOP_CONNECTOR_VERSION
 
 # Download and install Spark
 RUN cd /tmp \
@@ -46,5 +43,5 @@ RUN cd /tmp \
  && rm /tmp/spark.tgz
 ENV SPARK_HOME=/opt/spark
 
-# Copy configurations
+# Copy over Spark defaults in Image build
 COPY spark-defaults.conf /opt/spark/conf/spark-defaults.conf

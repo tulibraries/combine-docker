@@ -30,7 +30,6 @@
 #                     names. (Default: name of the user starting Livy).
 # - LIVY_MAX_LOG_FILES Max number of log file to keep in the log directory. (Default: 5.)
 # - LIVY_NICENESS   Niceness of the Livy server process when running in the background. (Default: 0.)
-# BEGIN ANSIBLE MANAGED BLOCK
 SPARK_HOME=/opt/spark
 HADOOP_PREFIX=/opt/hadoop
 HADOOP_HOME=/opt/hadoop
@@ -41,4 +40,3 @@ HADOOP_MAPRED_HOME=/opt/hadoop
 HADOOP_YARN_HOME=/opt/hadoop
 PYSPARK_PYTHON=/opt/conda/envs/combine/bin/python
 DJANGO_SETTINGS_MODULE=combine.settings
-# END ANSIBLE MANAGED BLOCK

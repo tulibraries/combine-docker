@@ -1,4 +1,4 @@
-FROM combine-docker_spark-cluster-base:latest
+FROM tulibraries/combine-base:0.0.0
 
 # Arguments
 ARG HADOOP_VERSION
