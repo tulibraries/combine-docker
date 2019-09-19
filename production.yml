@@ -1,0 +1,34 @@
+version: '3'
+services:
+  elasticsearch:
+    restart: always
+
+  mysql:
+    restart: always
+
+  mongo:
+    restart: always
+
+  redis:
+    restart: always
+
+  hadoop-namenode-format:
+    restart: always
+
+  hadoop-namenode:
+    restart: always
+
+  hadoop-datanode:
+    restart: always
+
+  combine-django-migration:
+    restart: always
+
+  combine-django:
+    restart: always
+
+  combine-celery:
+    restart: always
+
+  combine-livy:
+    restart: always
