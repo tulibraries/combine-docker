@@ -40,15 +40,15 @@ ship-combine-livy:
 
 up: down
 	docker-compose -p combine-docker pull
-	env $$(cat $(env-file)) docker-compose -p combine-docker build
-	env $$(cat $(env-file)) docker-compose -p combine-docker up -d
+	docker-compose -p combine-docker build
+	docker-compose -p combine-docker up -d
 
 reload:
-	env $$(cat $(env-file)) docker-compose -p combine-docker restart
+	docker-compose -p combine-docker restart
 
 stop:
 	docker-compose -p combine-docker stop
 
 down:
-	docker-compose -p combine-docker down -v
+	docker-compose -p combine-docker down -v --rmi all 
 	docker-compose -p combine-docker rm

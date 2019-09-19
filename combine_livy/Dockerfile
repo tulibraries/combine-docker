@@ -1,4 +1,4 @@
-FROM tulibraries/combine-django:0.0.9
+FROM tulibraries/combine-django:0.0.10
 
 # Arguments
 ENV SPARK_HOME=/opt/spark

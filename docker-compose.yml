@@ -22,12 +22,12 @@ services:
   mysql:
     image: mysql:5
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysqldata:/var/lib/mysql
       - ./mysql:/etc/mysql/conf.d
     healthcheck:
-        test: ["CMD-SHELL", "mysqladmin -h 'localhost' -u root -p${MYSQL_PASSWORD} ping --silent"]
+        test: ["CMD-SHELL", "mysqladmin -h 'localhost' -u root -p${MYSQL_ROOT_PASSWORD} ping --silent"]
         interval: 30s
         timeout: 30s
         retries: 3
@@ -82,15 +82,13 @@ services:
       - hadoop-namenode
 
   combine-django-migration:
-    # image: tulibraries/combine-django:0.0.9
-    build: ./combine_django
+    image: tulibraries/combine-django:0.0.10
     env_file:
-      - combine_django/dev.env
+      - combine_django/.env
     environment:
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ADMIN_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
-      - ./combine:/opt/combine
       - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
@@ -99,21 +97,19 @@ services:
       - hdfs:/hdfs
       - livy_binaries:/opt/livy
       - spark_binaries:/opt/spark
-    command: '/bin/bash -c "/tmp/combine_db.sh"'
+    command: '/tmp/wait-for-it/wait-for-it.sh -h mysql -p 3306 -- /bin/bash -c "/tmp/combine_db.sh"'
     depends_on:
       - mysql
       - elasticsearch
 
   combine-django:
-    # image: tulibraries/combine-django:0.0.9
-    build: ./combine_django
+    image: tulibraries/combine-django:0.0.10
     env_file:
-      - combine_django/dev.env
+      - combine_django/.env
     environment:
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ADMIN_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
-      - ./combine:/opt/combine
       - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
@@ -124,16 +120,15 @@ services:
       - spark_binaries:/opt/spark
     ports:
       - ${COMBINE_DJANGO_HOST_PORT}:8000
-    command: [ "python", "/opt/combine/manage.py", "runserver", "0.0.0.0:8000" ]
+    command: '/tmp/wait-for-it/wait-for-it.sh -h mysql -p 3306 -- /bin/bash -c "sleep 10 && nohup pyjxslt 6767 & > /tmp/pyjxslt.out && python /opt/combine/manage.py runserver 0.0.0.0:8000"'
     depends_on:
       - combine-django-migration
 
   combine-celery:
-    image: tulibraries/combine-django:0.0.9
+    image: tulibraries/combine-django:0.0.10
     env_file:
-      - combine_django/dev.env
+      - combine_django/.env
     volumes:
-      - ./combine:/opt/combine
       - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
@@ -143,16 +138,15 @@ services:
       - livy_binaries:/opt/livy
       - spark_binaries:/opt/spark
     working_dir: /opt/combine
-    command:  ["celery", "-A", "core", "worker", "-l", "info", "--concurrency", "1"]
+    command: '/tmp/wait-for-it/wait-for-it.sh -h redis -p 6379 -- /bin/bash -c "sleep 10 && nohup pyjxslt 6767 & > /tmp/pyjxslt.out && celery -A core worker -l info --concurrency 1"'
     depends_on:
       - redis
 
   combine-livy:
-    image: tulibraries/combine-livy:0.0.0
+    image: tulibraries/combine-livy:0.0.1
     env_file:
-      - combine_django/dev.env
+      - combine_django/.env
     volumes:
-      - ./combine:/opt/combine
       - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine

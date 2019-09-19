@@ -31,8 +31,7 @@ RUN /opt/conda/bin/conda create -n combine python=3.5 --yes
 ENV PATH /opt/conda/envs/combine/bin:$PATH
 
 # Copy Combine app submodule
-# RUN git clone -b ${COMBINE_BRANCH} --single-branch https://github.com/tulibraries/combine.git /opt/combine
-COPY ../combine /opt/combine
+RUN git clone -b ${COMBINE_BRANCH} --single-branch https://github.com/tulibraries/combine.git /opt/combine
 
 # Copy scripts
 COPY combine_db.sh /tmp/combine_db.sh
