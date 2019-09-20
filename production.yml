@@ -4,51 +4,71 @@ services:
     deploy:
       placement:
         constraints: [node.labels.number == 3]
-      restart: always
+      restart_policy:
+        condition: on-failure
 
   mysql:
     deploy:
       placement:
         constraints: [node.labels.number == 2]
-      restart: always
+      restart_policy:
+        condition: on-failure
 
   mongo:
-    placement:
-      constraints: [node.labels.number == 3]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 3]
+      restart_policy:
+        condition: on-failure
 
   redis:
-    restart: always
+    deploy:
+      restart_policy:
+        condition: on-failure
 
   hadoop-namenode-format:
-    placement:
-      constraints: [node.labels.number == 1]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 1]
+      restart_policy:
+        condition: on-failure
 
   hadoop-namenode:
-    placement:
-      constraints: [node.labels.number == 2]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 2]
+      restart_policy:
+        condition: on-failure
 
   hadoop-datanode:
-    restart: always
+    deploy:
+      restart_policy:
+        condition: on-failure
 
   combine-django-migration:
-    placement:
-      constraints: [node.labels.number == 1]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 1]
+      restart_policy:
+        condition: on-failure
 
   combine-django:
-    placement:
-      constraints: [node.labels.number == 1]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 1]
+      restart_policy:
+        condition: on-failure
 
   combine-celery:
-    placement:
-      constraints: [node.labels.number == 1]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 1]
+      restart_policy:
+        condition: on-failure
 
   combine-livy:
-    placement:
-      constraints: [node.labels.number == 1]
-    restart: always
+    deploy:
+      placement:
+        constraints: [node.labels.number == 1]
+      restart_policy:
+        condition: on-failure
