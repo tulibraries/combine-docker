@@ -45,3 +45,6 @@ ENV SPARK_HOME=/opt/spark
 
 # Copy over Spark defaults in Image build
 COPY spark-defaults.conf /opt/spark/conf/spark-defaults.conf
+
+# Copy Needed jars / Libraries for use downstream
+COPY combinelib /combinelib
