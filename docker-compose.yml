@@ -51,7 +51,6 @@ services:
   hadoop-namenode-format:
     image: tulibraries/combine-hadoop:0.0.3
     volumes:
-      - ./combinelib:/combinelib
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
     command: '/bin/bash -c "mkdir -p /hdfs/namenode && yes Y | /opt/hadoop/bin/hdfs namenode -format"'
@@ -59,7 +58,6 @@ services:
   hadoop-namenode:
     image: tulibraries/combine-hadoop:0.0.3
     volumes:
-      - ./combinelib:/combinelib
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
     depends_on:
@@ -70,8 +68,6 @@ services:
 
   hadoop-datanode:
     image: tulibraries/combine-hadoop:0.0.3
-    volumes:
-      - ./combinelib:/combinelib
     ports:
       - 50070:50070
       - 50075:50075
@@ -89,7 +85,6 @@ services:
       COMBINE_SUPERADMIN_EMAIL: ${COMBINE_SUPERADMIN_EMAIL}
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
@@ -112,7 +107,6 @@ services:
       COMBINE_SUPERADMIN_EMAIL: ${COMBINE_SUPERADMIN_EMAIL}
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
@@ -131,7 +125,6 @@ services:
     env_file:
       - combine_django/.env
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
@@ -149,7 +142,6 @@ services:
     env_file:
       - combine_django/.env
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
