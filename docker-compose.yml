@@ -86,6 +86,7 @@ services:
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
       - combine_home:/home/combine
+      - combine_static:/opt/combine/static
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
       - hadoop_binaries:/opt/hadoop
@@ -108,6 +109,7 @@ services:
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
       - combine_home:/home/combine
+      - combine_static:/opt/combine/static
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
       - hadoop_binaries:/opt/hadoop
