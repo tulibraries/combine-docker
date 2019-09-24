@@ -28,3 +28,6 @@ try:
 except:
 	User.objects.create_superuser('$COMBINE_SUPERADMIN_USERNAME', '$COMBINE_SUPERADMIN_EMAIL', '$COMBINE_SUPERADMIN_PASSWORD')
 EOF
+
+
+python /opt/combine/manage.py collectstatic --no-input --clear
