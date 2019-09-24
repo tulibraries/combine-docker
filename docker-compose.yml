@@ -49,17 +49,15 @@ services:
       retries: 3
 
   hadoop-namenode-format:
-    image: tulibraries/combine-hadoop:0.0.2
+    image: tulibraries/combine-hadoop:0.0.3
     volumes:
-      - ./combinelib:/combinelib
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
     command: '/bin/bash -c "mkdir -p /hdfs/namenode && yes Y | /opt/hadoop/bin/hdfs namenode -format"'
 
   hadoop-namenode:
-    image: tulibraries/combine-hadoop:0.0.2
+    image: tulibraries/combine-hadoop:0.0.3
     volumes:
-      - ./combinelib:/combinelib
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
     depends_on:
@@ -69,9 +67,7 @@ services:
     command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'namenode']
 
   hadoop-datanode:
-    image: tulibraries/combine-hadoop:0.0.2
-    volumes:
-      - ./combinelib:/combinelib
+    image: tulibraries/combine-hadoop:0.0.3
     ports:
       - 50070:50070
       - 50075:50075
@@ -80,15 +76,17 @@ services:
       - hadoop-namenode
 
   combine-django-migration:
-    image: tulibraries/combine-django:0.0.11
+    image: tulibraries/combine-django:0.0.14
     env_file:
       - combine_django/.env
     environment:
       MYSQL_ADMIN_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      COMBINE_SUPERADMIN_USERNAME: ${COMBINE_SUPERADMIN_USERNAME}
+      COMBINE_SUPERADMIN_EMAIL: ${COMBINE_SUPERADMIN_EMAIL}
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
+      - combine_static:/opt/combine/static
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
       - hadoop_binaries:/opt/hadoop
@@ -101,15 +99,17 @@ services:
       - elasticsearch
 
   combine-django:
-    image: tulibraries/combine-django:0.0.11
+    image: tulibraries/combine-django:0.0.14
     env_file:
       - combine_django/.env
     environment:
       MYSQL_ADMIN_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      COMBINE_SUPERADMIN_USERNAME: ${COMBINE_SUPERADMIN_USERNAME}
+      COMBINE_SUPERADMIN_EMAIL: ${COMBINE_SUPERADMIN_EMAIL}
       COMBINE_SUPERADMIN_PASSWORD: ${COMBINE_SUPERADMIN_PASSWORD}
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
+      - combine_static:/opt/combine/static
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
       - hadoop_binaries:/opt/hadoop
@@ -117,18 +117,18 @@ services:
       - livy_binaries:/opt/livy
       - spark_binaries:/opt/spark
     ports:
-      - ${COMBINE_DJANGO_HOST_PORT}:8000
+      - 8000
     command: '/tmp/wait-for-it/wait-for-it.sh -h mysql -p 3306 -- /bin/bash -c "sleep 10 && nohup pyjxslt 6767 & > /tmp/pyjxslt.out && python /opt/combine/manage.py runserver 0.0.0.0:8000"'
     depends_on:
       - combine-django-migration
 
   combine-celery:
-    image: tulibraries/combine-django:0.0.11
+    image: tulibraries/combine-django:0.0.14
     env_file:
       - combine_django/.env
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
+      - combine_static:/opt/combine/static
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
       - hadoop_binaries:/opt/hadoop
@@ -140,12 +140,20 @@ services:
     depends_on:
       - redis
 
+  combine-nginx:
+    build: ./combine_nginx
+    volumes:
+      - combine_static:/opt/combine/static
+    ports:
+      - ${COMBINE_DJANGO_HOST_PORT}:80
+    depends_on:
+      - combine-django
+
   combine-livy:
-    image: tulibraries/combine-livy:0.0.2
+    image: tulibraries/combine-livy:0.0.5
     env_file:
       - combine_django/.env
     volumes:
-      - ./combinelib:/combinelib
       - combine_home:/home/combine
       - combine_python_env:/opt/conda/envs/combine
       - combine_tmp:/tmp
@@ -180,4 +188,6 @@ volumes:
   livy_binaries:
     driver: local
   spark_binaries:
+    driver: local
+  combine_static:
     driver: local
