@@ -76,7 +76,7 @@ services:
       - hadoop-namenode
 
   combine-django-migration:
-    image: tulibraries/combine-django:0.0.13
+    image: tulibraries/combine-django:0.0.14
     env_file:
       - combine_django/.env
     environment:
@@ -99,7 +99,7 @@ services:
       - elasticsearch
 
   combine-django:
-    image: tulibraries/combine-django:0.0.13
+    image: tulibraries/combine-django:0.0.14
     env_file:
       - combine_django/.env
     environment:
@@ -123,7 +123,7 @@ services:
       - combine-django-migration
 
   combine-celery:
-    image: tulibraries/combine-django:0.0.13
+    image: tulibraries/combine-django:0.0.14
     env_file:
       - combine_django/.env
     volumes:
@@ -150,7 +150,7 @@ services:
       - combine-django
 
   combine-livy:
-    image: tulibraries/combine-livy:0.0.4
+    image: tulibraries/combine-livy:0.0.5
     env_file:
       - combine_django/.env
     volumes:

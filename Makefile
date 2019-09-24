@@ -5,7 +5,7 @@ build-combine-hadoop:
 	docker build -t combine-hadoop --build-arg COMBINE_BRANCH=dev --build-arg LIVY_TAGGED_RELEASE=0.5.0-incubating --build-arg SCALA_VERSION=2.11 combine_hadoop
 
 build-combine-django:
-	docker build -t combine-django --build-arg COMBINE_BRANCH=dev --build-arg LIVY_TAGGED_RELEASE=v0.5.0-incubating --build-arg SCALA_VERSION=2.11 combine_django
+	docker build -t combine-django --build-arg COMBINE_BRANCH=master --build-arg LIVY_TAGGED_RELEASE=v0.5.0-incubating --build-arg SCALA_VERSION=2.11 combine_django
 
 build-combine-livy:
 	docker build -t combine-livy combine_livy
@@ -50,5 +50,5 @@ stop:
 	docker-compose -p combine-docker stop
 
 down:
-	docker-compose -p combine-docker down -v --rmi all 
+	docker-compose -p combine-docker down -v --rmi all
 	docker-compose -p combine-docker rm
