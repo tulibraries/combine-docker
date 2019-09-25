@@ -100,6 +100,7 @@ services:
 
   combine-django:
     image: tulibraries/combine-django:0.0.14
+    tty: true
     env_file:
       - combine_django/.env
     environment:
