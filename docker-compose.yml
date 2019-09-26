@@ -142,7 +142,7 @@ services:
       - redis
 
   combine-nginx:
-    image: tulibraries/combine-nginx:0.0.0
+    build: ./combine_nginx
     volumes:
       - combine_static:/opt/combine/static
     ports:
@@ -151,7 +151,7 @@ services:
       - combine-django
 
   combine-livy:
-    build: ./combine_nginx
+    image: tulibraries/combine-livy:0.0.6
     env_file:
       - combine_django/.env
     volumes:
