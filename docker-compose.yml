@@ -142,7 +142,7 @@ services:
       - redis
 
   combine-nginx:
-    imate: tulibraries/combine-nginx:0.0.0
+    image: tulibraries/combine-nginx:0.0.0
     volumes:
       - combine_static:/opt/combine/static
     ports:
