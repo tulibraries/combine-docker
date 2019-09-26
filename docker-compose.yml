@@ -151,7 +151,7 @@ services:
       - combine-django
 
   combine-livy:
-    image: tulibraries/combine-livy:0.0.6
+    build: ./combine_nginx
     env_file:
       - combine_django/.env
     volumes:
