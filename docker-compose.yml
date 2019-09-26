@@ -165,7 +165,7 @@ services:
     ports:
       - 8998:8998
       - 4040:4040
-    command: ["bash", "-c", "'/opt/livy/bin/livy-server'"]
+    command: '/bin/bash -c "sleep 20 && nohup pyjxslt 6767 & > /tmp/pyjxslt.out && /opt/livy/bin/livy-server"'
 
 volumes:
   # non-volatile
