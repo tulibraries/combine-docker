@@ -49,14 +49,14 @@ services:
       retries: 3
 
   hadoop-namenode-format:
-    image: tulibraries/combine-hadoop:0.0.5
+    image: tulibraries/combine-hadoop:0.0.6
     volumes:
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
     command: '/bin/bash -c "mkdir -p /hdfs/namenode && yes Y | /opt/hadoop/bin/hdfs namenode -format"'
 
   hadoop-namenode:
-    image: tulibraries/combine-hadoop:0.0.5
+    image: tulibraries/combine-hadoop:0.0.6
     volumes:
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
@@ -67,9 +67,9 @@ services:
     command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'namenode']
 
   hadoop-datanode:
-    image: tulibraries/combine-hadoop:0.0.5
+    image: tulibraries/combine-hadoop:0.0.6
     ports:
-      - 50070:50070
+      - 50071:50071
       - 50075:50075
     command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'datanode']
     depends_on:
