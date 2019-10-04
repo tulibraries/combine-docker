@@ -5,10 +5,15 @@ services:
     environment:
       cluster.name: combine-elasticsearch
       ES_JAVA_OPTS: -Xms1024m -Xmx1024m
-      discovery.type: single-node
+      xpack.security.enabled: "false"
       http.max_initial_line_length: 5m
       path.repo: /tmp/es_repo
-      xpack.security.enabled: "false"
+      http.port: 9200
+      node.master: true
+      node.name: combine_es
+      transport.tcp.port: 9300
+      cluster.initial_master_nodes:
+          - combine_es
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
@@ -76,7 +81,7 @@ services:
       - hadoop-namenode
 
   combine-django-migration:
-    image: tulibraries/combine-django:0.1.0
+    image: tulibraries/combine-django:0.1.1
     env_file:
       - combine_django/.env
     environment:
@@ -99,7 +104,7 @@ services:
       - elasticsearch
 
   combine-django:
-    image: tulibraries/combine-django:0.1.0
+    image: tulibraries/combine-django:0.1.1
     tty: true
     env_file:
       - combine_django/.env
@@ -124,7 +129,7 @@ services:
       - combine-django-migration
 
   combine-celery:
-    image: tulibraries/combine-django:0.1.0
+    image: tulibraries/combine-django:0.1.1
     env_file:
       - combine_django/.env
     volumes:

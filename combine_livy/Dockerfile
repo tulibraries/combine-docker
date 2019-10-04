@@ -1,4 +1,4 @@
-FROM tulibraries/combine-django:0.1.0
+FROM tulibraries/combine-django:0.1.1
 
 # Arguments
 ARG ELASTICSEARCH_HADOOP_CONNECTOR_VERSION
