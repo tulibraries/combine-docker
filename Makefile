@@ -1,17 +1,18 @@
-
+#!make
 include .env
+# export $(shell sed 's/=.*//' envfile)
 
 test-env:
 	echo $(HADOOP_VERSION)
 
 build-combine-base:
-	docker build -t combine-base --build-arg SPARK_VERSION=2.4.4 --build-arg HADOOP_VERSION_SHORT=2.7 --build-arg ELASTICSEARCH_HADOOP_CONNECTOR_VERSION=7.2.1 combine_base
+	docker build -t combine-base --build-arg SPARK_VERSION=$(SPARK_VERSION) --build-arg HADOOP_VERSION_SHORT=$(HADOOP_VERSION_SHORT) --build-arg ELASTICSEARCH_HADOOP_CONNECTOR_VERSION=$(ELASTICSEARCH_HADOOP_CONNECTOR_VERSION) combine_base
 
 build-combine-hadoop:
-	docker build -t combine-hadoop --build-arg COMBINE_BRANCH=dev --build-arg LIVY_TAGGED_RELEASE=0.5.0-incubating --build-arg SCALA_VERSION=2.11 --build-arg HADOOP_VERSION=$(HADOOP_VERSION) combine_hadoop
+	docker build -t combine-hadoop --build-arg HADOOP_VERSION=$(HADOOP_VERSION) combine_hadoop
 
 build-combine-django:
-	docker build -t combine-django --build-arg COMBINE_BRANCH=master --build-arg LIVY_TAGGED_RELEASE=v0.5.0-incubating --build-arg SCALA_VERSION=2.11 combine_django
+	docker build -t combine-django --build-arg COMBINE_BRANCH=$(COMBINE_BRANCH) --build-arg LIVY_TAGGED_RELEASE=$(LIVY_TAGGED_RELEASE) --build-arg SCALA_VERSION=$(SCALA_VERSION) combine_django
 
 build-combine-livy:
 	docker build -t combine-livy combine_livy
