@@ -3,6 +3,7 @@ FROM openjdk:8-jdk-stretch
 # Arguments
 ARG SPARK_VERSION
 ARG HADOOP_VERSION_SHORT
+# The following needs to match what is in spark-defaults.conf, hence is imported here
 ARG ELASTICSEARCH_HADOOP_CONNECTOR_VERSION
 ENV SPARK_VERSION=$SPARK_VERSION
 ENV HADOOP_VERSION_SHORT=$HADOOP_VERSION_SHORT
