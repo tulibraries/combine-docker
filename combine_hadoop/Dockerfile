@@ -1,4 +1,4 @@
-FROM tulibraries/combine-base:0.0.4
+FROM tulibraries/combine-base:0.0.6
 
 # Arguments
 ARG HADOOP_VERSION

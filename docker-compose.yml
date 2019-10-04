@@ -1,14 +1,18 @@
 version: '3'
 services:
   elasticsearch:
-    image: elasticsearch:7.3.1
+    image: elasticsearch:7.2.1
     environment:
-      cluster.name: combine-elasticsearch
-      ES_JAVA_OPTS: -Xms1024m -Xmx1024m
-      discovery.type: single-node
-      http.max_initial_line_length: 5m
-      path.repo: /tmp/es_repo
+      cluster.name: "combine-elasticsearch"
+      ES_JAVA_OPTS: "-Xms1024m -Xmx1024m"
       xpack.security.enabled: "false"
+      http.max_initial_line_length: 5m
+      path.repo: "/tmp/es_repo"
+      http.port: 9200
+      node.master: "true"
+      node.name: "combine_es"
+      transport.tcp.port: 9300
+      cluster.initial_master_nodes: "combine_es"
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
@@ -49,14 +53,14 @@ services:
       retries: 3
 
   hadoop-namenode-format:
-    image: tulibraries/combine-hadoop:0.0.4
+    image: tulibraries/combine-hadoop:0.0.6
     volumes:
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
     command: '/bin/bash -c "mkdir -p /hdfs/namenode && yes Y | /opt/hadoop/bin/hdfs namenode -format"'
 
   hadoop-namenode:
-    image: tulibraries/combine-hadoop:0.0.4
+    image: tulibraries/combine-hadoop:0.0.6
     volumes:
       - hadoop_binaries:/opt/hadoop
       - hdfs:/hdfs
@@ -67,16 +71,16 @@ services:
     command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'namenode']
 
   hadoop-datanode:
-    image: tulibraries/combine-hadoop:0.0.4
+    image: tulibraries/combine-hadoop:0.0.6
     ports:
-      - 50070:50070
+      - 50071:50071
       - 50075:50075
     command: ['/opt/hadoop/bin/hdfs', '--config', '/opt/hadoop/etc/hadoop', 'datanode']
     depends_on:
       - hadoop-namenode
 
   combine-django-migration:
-    image: tulibraries/combine-django:0.1.0
+    image: tulibraries/combine-django:0.1.1
     env_file:
       - combine_django/.env
     environment:
@@ -99,7 +103,7 @@ services:
       - elasticsearch
 
   combine-django:
-    image: tulibraries/combine-django:0.1.0
+    image: tulibraries/combine-django:0.1.1
     tty: true
     env_file:
       - combine_django/.env
@@ -124,7 +128,7 @@ services:
       - combine-django-migration
 
   combine-celery:
-    image: tulibraries/combine-django:0.1.0
+    image: tulibraries/combine-django:0.1.1
     env_file:
       - combine_django/.env
     volumes:
@@ -151,7 +155,7 @@ services:
       - combine-django
 
   combine-livy:
-    image: tulibraries/combine-livy:0.1.0
+    image: tulibraries/combine-livy:0.1.2
     env_file:
       - combine_django/.env
     volumes:
