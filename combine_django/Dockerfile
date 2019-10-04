@@ -1,4 +1,4 @@
-FROM tulibraries/combine-base:0.0.5
+FROM tulibraries/combine-base:0.0.6
 
 # Arguments to Environment Variables
 ARG COMBINE_BRANCH
