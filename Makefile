@@ -1,6 +1,5 @@
 #!make
 include .env
-# export $(shell sed 's/=.*//' envfile)
 
 test-env:
 	echo $(HADOOP_VERSION)
@@ -15,7 +14,7 @@ build-combine-django:
 	docker build -t combine-django --build-arg COMBINE_BRANCH=$(COMBINE_BRANCH) --build-arg LIVY_TAGGED_RELEASE=$(LIVY_TAGGED_RELEASE) combine_django
 
 build-combine-livy:
-	docker build -t combine-livy--build-arg SCALA_VERSION=$(SCALA_VERSION) combine_livy
+	docker build -t combine-livy --build-arg SCALA_VERSION=$(SCALA_VERSION) combine_livy
 
 tag-combine-base:
 	docker tag combine-base tulibraries/combine-base:$(tag)

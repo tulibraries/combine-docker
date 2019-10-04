@@ -3,17 +3,16 @@ services:
   elasticsearch:
     image: elasticsearch:7.2.1
     environment:
-      cluster.name: combine-elasticsearch
-      ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+      cluster.name: "combine-elasticsearch"
+      ES_JAVA_OPTS: "-Xms1024m -Xmx1024m"
       xpack.security.enabled: "false"
       http.max_initial_line_length: 5m
-      path.repo: /tmp/es_repo
+      path.repo: "/tmp/es_repo"
       http.port: 9200
-      node.master: true
-      node.name: combine_es
+      node.master: "true"
+      node.name: "combine_es"
       transport.tcp.port: 9300
-      cluster.initial_master_nodes:
-          - combine_es
+      cluster.initial_master_nodes: "combine_es"
     volumes:
       - esdata:/usr/share/elasticsearch/data
     ports:
@@ -156,10 +155,7 @@ services:
       - combine-django
 
   combine-livy:
-    image: tulibraries/combine-livy:0.1.1
-    environment:
-      ELASTICSEARCH_HADOOP_CONNECTOR_VERSION: 7.2.1
-      SCALA_VERSION: 2.11
+    image: tulibraries/combine-livy:0.1.2
     env_file:
       - combine_django/.env
     volumes:
